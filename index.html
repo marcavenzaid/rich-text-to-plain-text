@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rich Text to Plain Text</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1d2330;
+      --muted: #667085;
+      --border: #dde1e7;
+      --accent: #3b5bdb;
+      --accent-text: #ffffff;
+      --input-bg: #fbfcfd;
+      --ok: #2f9e44;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14161b;
+        --panel: #1c1f26;
+        --text: #e6e8ec;
+        --muted: #98a0ad;
+        --border: #2e333d;
+        --accent: #748ffc;
+        --accent-text: #0e1016;
+        --input-bg: #171a20;
+        --ok: #69db7c;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 18px 24px 6px;
+    }
+    h1 { margin: 0; font-size: 20px; font-weight: 650; }
+    header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      align-items: center;
+      padding: 10px 24px;
+      font-size: 14px;
+    }
+    .options label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; user-select: none; }
+    .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .segmented button { border: 0; border-radius: 0; background: var(--panel); }
+    .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 8px 24px 24px;
+      min-height: 0;
+    }
+    @media (max-width: 800px) {
+      main { grid-template-columns: 1fr; padding: 8px 16px 16px; }
+      header, .options { padding-left: 16px; padding-right: 16px; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      min-height: 340px;
+      min-width: 0;
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .panel-head h2 { font-size: 14px; margin: 0 auto 0 4px; font-weight: 600; }
+    button {
+      font: inherit;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    #input, #output {
+      flex: 1;
+      margin: 0;
+      padding: 14px 16px;
+      overflow: auto;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 0;
+      border-radius: 0 0 12px 12px;
+      outline: none;
+      min-height: 0;
+    }
+    #input { word-wrap: break-word; }
+    #input:empty::before {
+      content: "Paste rich text here (Ctrl + v) from Word, Google Docs, web pages, Wikipedia…";
+      color: var(--muted);
+    }
+    #input img[src^="file:"] { display: none; }
+    #input .katex-html, #input .MathJax_Preview, #input mjx-math { display: none; }
+    #input table { border-collapse: collapse; }
+    #input td, #input th { border: 1px solid var(--border); padding: 2px 6px; }
+    #output {
+      resize: none;
+      font: 14px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+      white-space: pre-wrap;
+    }
+    .status { font-size: 12px; color: var(--muted); padding: 0 4px; }
+    .status.ok { color: var(--ok); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Rich Text 🡒 Plain Text</h1>
+    <p>Paste formatted text and get plain text back, with the math written out: 2<sup>31</sup> 🡒 2^31, fractions 🡒 a/b, roots 🡒 sqrt(x).</p>
+  </header>
+
+  <div class="options">
+    <span>Symbols:
+      <span class="segmented" role="group" aria-label="Symbols">
+        <button type="button" id="symUnicode" aria-pressed="true">Unicode (× ≤ π)</button>
+        <button type="button" id="symAscii" aria-pressed="false">ASCII (* &lt;= pi)</button>
+      </span>
+    </span>
+    <label><input type="checkbox" id="optScripts" checked> x² 🡒 x^2</label>
+    <label><input type="checkbox" id="optLatex" checked> Convert LaTeX ($…$)</label>
+    <label><input type="checkbox" id="optLinks"> Keep link URLs</label>
+    <label><input type="checkbox" id="optAutoCopy"> Auto-copy result</label>
+  </div>
+
+  <main>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Rich text</h2>
+        <button type="button" id="exampleBtn">Example</button>
+        <button type="button" id="pasteBtn">Paste from clipboard</button>
+        <button type="button" id="clearBtn">Clear</button>
+      </div>
+      <div id="input" contenteditable="true" spellcheck="false" aria-label="Rich text input"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Plain text</h2>
+        <span class="status" id="status"></span>
+        <button type="button" id="downloadBtn">Download .txt</button>
+        <button type="button" class="primary" id="copyBtn">Copy</button>
+      </div>
+      <textarea id="output" spellcheck="false" aria-label="Plain text output"></textarea>
+    </section>
+  </main>
+
+  <script src="converter.js"></script>
+  <script>
+    (function () {
+      const input = document.getElementById('input');
+      const output = document.getElementById('output');
+      const status = document.getElementById('status');
+      const opt = {
+        unicode: document.getElementById('symUnicode'),
+        ascii: document.getElementById('symAscii'),
+        scripts: document.getElementById('optScripts'),
+        latex: document.getElementById('optLatex'),
+        links: document.getElementById('optLinks'),
+        autoCopy: document.getElementById('optAutoCopy'),
+      };
+
+      // The raw clipboard HTML is kept so that things the preview cannot show
+      // (e.g. Word equations hidden in conditional comments) still convert.
+      let source = { type: 'html', html: '' };
+      let statusTimer;
+
+      function options() {
+        return {
+          ascii: opt.ascii.getAttribute('aria-pressed') === 'true',
+          unicodeScripts: opt.scripts.checked,
+          latexInText: opt.latex.checked,
+          keepLinks: opt.links.checked,
+        };
+      }
+
+      function convert() {
+        const o = options();
+        output.value = source.type === 'html'
+          ? RichToPlain.htmlToPlain(source.html, o)
+          : RichToPlain.textToPlain(source.text, o);
+        const lines = output.value ? output.value.split('\n').length : 0;
+        setStatus(output.value.length + ' chars · ' + lines + ' lines');
+      }
+
+      function setStatus(text, ok) {
+        clearTimeout(statusTimer);
+        status.textContent = text;
+        status.classList.toggle('ok', !!ok);
+        if (ok) statusTimer = setTimeout(convertStatus, 1800);
+      }
+      function convertStatus() {
+        const lines = output.value ? output.value.split('\n').length : 0;
+        setStatus(output.value.length + ' chars · ' + lines + ' lines');
+      }
+
+      // Show pasted HTML safely: no scripts, styles, event handlers or frames.
+      function sanitize(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        doc.querySelectorAll('script, style, link, meta, iframe, object, embed, form, base, title').forEach(n => n.remove());
+        doc.body.querySelectorAll('*').forEach(el => {
+          for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on') || name === 'contenteditable' ||
+                ((name === 'href' || name === 'src' || name === 'xlink:href') && /^\s*javascript:/i.test(attr.value))) {
+              el.removeAttribute(attr.name);
+            }
+          }
+        });
+        return doc.body.innerHTML;
+      }
+
+      function load(html, text) {
+        if (html) {
+          source = { type: 'html', html };
+          input.innerHTML = sanitize(html);
+        } else {
+          source = { type: 'text', text: text || '' };
+          input.textContent = text || '';
+        }
+        convert();
+        if (opt.autoCopy.checked && output.value) copy();
+      }
+
+      input.addEventListener('paste', e => {
+        e.preventDefault();
+        const dt = e.clipboardData;
+        load(dt.getData('text/html'), dt.getData('text/plain'));
+      });
+      input.addEventListener('drop', e => {
+        e.preventDefault();
+        const dt = e.dataTransfer;
+        load(dt.getData('text/html'), dt.getData('text/plain'));
+      });
+      // Typing / editing in the box: convert what is shown.
+      input.addEventListener('input', () => {
+        source = { type: 'html', html: input.innerHTML };
+        convert();
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          let items;
+          try {
+            items = await navigator.clipboard.read({ unsanitized: ['text/html'] });
+          } catch (_) {
+            items = await navigator.clipboard.read();
+          }
+          let html = '', text = '';
+          for (const item of items) {
+            if (!html && item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
+            if (!text && item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
+          }
+          load(html, text);
+        } catch (err) {
+          try {
+            load('', await navigator.clipboard.readText());
+          } catch (_) {
+            setStatus('Clipboard blocked: click the box and press Ctrl+V');
+          }
+        }
+      });
+
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        load('', '');
+        input.innerHTML = '';
+        input.focus();
+      });
+
+      document.getElementById('exampleBtn').addEventListener('click', () => {
+        load(
+          '<h3>Example</h3>' +
+          '<p>A 32-bit int holds 2<sup>31</sup> − 1 values; water is H<sub>2</sub>O.</p>' +
+          '<p>Quadratic formula: <math><mi>x</mi><mo>=</mo><mfrac><mrow><mo>−</mo><mi>b</mi><mo>±</mo>' +
+          '<msqrt><msup><mi>b</mi><mn>2</mn></msup><mo>−</mo><mn>4</mn><mi>a</mi><mi>c</mi></msqrt></mrow>' +
+          '<mrow><mn>2</mn><mi>a</mi></mrow></mfrac></math></p>' +
+          '<p>Sum: <math><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover>' +
+          '<mi>i</mi><mo>=</mo><mfrac><mrow><mi>n</mi><mo>(</mo><mi>n</mi><mo>+</mo><mn>1</mn><mo>)</mo></mrow><mn>2</mn></mfrac></math></p>' +
+          '<ul><li><b>Bold</b> and <i>italic</i> become plain</li><li>Unicode: x² + y³, area = πr²</li>' +
+          '<li>LaTeX in text: $e^{i\\pi} + 1 = 0$</li></ul>'
+        );
+      });
+
+      async function copy() {
+        try {
+          await navigator.clipboard.writeText(output.value);
+        } catch (_) {
+          output.select();
+          document.execCommand('copy');
+        }
+        setStatus('Copied ✓', true);
+      }
+      document.getElementById('copyBtn').addEventListener('click', copy);
+
+      document.getElementById('downloadBtn').addEventListener('click', () => {
+        const blob = new Blob([output.value], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'plain-text.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+
+      function setSymbols(ascii) {
+        opt.ascii.setAttribute('aria-pressed', String(ascii));
+        opt.unicode.setAttribute('aria-pressed', String(!ascii));
+        convert();
+      }
+      opt.unicode.addEventListener('click', () => setSymbols(false));
+      opt.ascii.addEventListener('click', () => setSymbols(true));
+      [opt.scripts, opt.latex, opt.links].forEach(c => c.addEventListener('change', convert));
+
+      // remember option choices
+      const KEY = 'rich-to-plain-options';
+      try {
+        const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (saved) {
+          opt.scripts.checked = saved.scripts;
+          opt.latex.checked = saved.latex;
+          opt.links.checked = saved.links;
+          opt.autoCopy.checked = saved.autoCopy;
+          setSymbols(saved.ascii);
+        }
+      } catch (_) {}
+      document.querySelector('.options').addEventListener('change', save);
+      document.querySelector('.options').addEventListener('click', save);
+      function save() {
+        try {
+          localStorage.setItem(KEY, JSON.stringify({
+            ascii: options().ascii, scripts: opt.scripts.checked, latex: opt.latex.checked,
+            links: opt.links.checked, autoCopy: opt.autoCopy.checked,
+          }));
+        } catch (_) {}
+      }
+
+      convert();
+      input.focus();
+    })();
+  </script>
+</body>
+</html>

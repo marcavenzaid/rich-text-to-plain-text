@@ -1,0 +1,12 @@
+{
+  "name": "rich-text-to-plain-text",
+  "version": "1.0.0",
+  "description": "Convert rich text (HTML, Word, KaTeX/MathJax, MathML, LaTeX) to plain text with math written out (2^31, a/b, sqrt(x)).",
+  "private": true,
+  "scripts": {
+    "test": "node tests/converter.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
