@@ -2,7 +2,7 @@
 
 ![screenshot_1](README_assets/screenshot_1.png)
 
-Paste formatted text and get plain text back, with math and formatting written out as normal characters.
+Converts styled/formatted text into plain text, with math and formatting written as normal characters.
 
 | Rich text | Plain text |
 |---|---|
@@ -23,9 +23,10 @@ Paste formatted text and get plain text back, with math and formatting written o
 No installation needed. Get the files with either option:
 
 **Option 1 - Download ZIP:** click **Code 🡒 Download ZIP** on GitHub, then unzip it.
+
 **Option 2 - Git:** `git clone https://github.com/<your-username>/rich-text-to-plain-text.git`
 
-Only `index.html` and `converter.js` are needed; keep them in the same folder. No internet connection is needed after downloading.
+Only `index.html` and the `css` and `js` folders are needed; keep them together in the same folder. No internet connection is needed after downloading.
 
 ## Usage
 
@@ -53,10 +54,10 @@ Options:
 
 ## Use from code
 
-`converter.js` has no dependencies and works in any browser:
+`js/converter.js` has no dependencies and works in any browser:
 
 ```html
-<script src="converter.js"></script>
+<script src="js/converter.js"></script>
 <script>
   RichToPlain.htmlToPlain('2<sup>31</sup>');        // "2^31"
   RichToPlain.latexToText('\\frac{1}{2}');          // "1/2"

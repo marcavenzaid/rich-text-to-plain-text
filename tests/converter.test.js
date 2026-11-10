@@ -1,7 +1,7 @@
 const { JSDOM } = require('jsdom');
 const dom = new JSDOM('');
 globalThis.DOMParser = dom.window.DOMParser;
-require('../converter.js');
+require('../js/converter.js');
 const { htmlToPlain, textToPlain, latexToText } = globalThis.RichToPlain;
 
 let fail = 0;

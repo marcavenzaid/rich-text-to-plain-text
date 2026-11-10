@@ -1,0 +1,128 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1d2330;
+  --muted: #667085;
+  --border: #dde1e7;
+  --accent: #3b5bdb;
+  --accent-text: #ffffff;
+  --input-bg: #fbfcfd;
+  --ok: #2f9e44;
+}
+:root[data-theme="dark"] {
+  --bg: #141414;
+  --panel: #1c1c1c;
+  --text: #e8e8e8;
+  --muted: #a0a0a0;
+  --border: #333333;
+  --accent: #748ffc;
+  --accent-text: #0e0e0e;
+  --input-bg: #181818;
+  --ok: #69db7c;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.theme-toggle { display: inline-flex; padding: 6px; }
+.theme-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:root[data-theme="dark"] .icon-moon, :root[data-theme="light"] .icon-sun { display: none; }
+h1 { margin: 0; font-size: 20px; font-weight: 650; }
+.description { margin: 0; padding: 14px 24px 0; color: var(--muted); font-size: 14px; }
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  padding: 10px 24px;
+  font-size: 14px;
+}
+.options label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; user-select: none; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented button { border: 0; border-radius: 0; background: var(--panel); }
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 8px 24px 24px;
+  min-height: 0;
+}
+@media (max-width: 800px) {
+  main { grid-template-columns: 1fr; padding: 8px 16px 16px; }
+  header, .description, .options { padding-left: 16px; padding-right: 16px; }
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  min-width: 0;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.panel-head h2 { font-size: 14px; margin: 0 auto 0 4px; font-weight: 600; }
+button {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#input, #output {
+  flex: 1;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 0;
+  border-radius: 0 0 12px 12px;
+  outline: none;
+  min-height: 0;
+}
+#input { word-wrap: break-word; }
+#input:empty::before {
+  content: "Paste rich text here (Ctrl + v) from Word, Google Docs, web pages, Wikipedia…";
+  color: var(--muted);
+}
+#input img[src^="file:"] { display: none; }
+#input .katex-html, #input .MathJax_Preview, #input mjx-math { display: none; }
+#input table { border-collapse: collapse; }
+#input td, #input th { border: 1px solid var(--border); padding: 2px 6px; }
+#output {
+  resize: none;
+  font: 14px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+  white-space: pre-wrap;
+}
+.status { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.status.ok { color: var(--ok); }
